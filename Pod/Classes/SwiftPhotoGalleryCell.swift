@@ -119,7 +119,7 @@ open class SwiftPhotoGalleryCell: UICollectionViewCell {
         fatalError("init(coder:) has not been implemented")
     }
 
-    @objc public func doubleTapAction(recognizer: UITapGestureRecognizer) {
+    @objc open func doubleTapAction(recognizer: UITapGestureRecognizer) {
 
         if (scrollView.zoomScale > scrollView.minimumZoomScale) {
             scrollView.setZoomScale(scrollView.minimumZoomScale, animated: true)
@@ -175,11 +175,11 @@ open class SwiftPhotoGalleryCell: UICollectionViewCell {
 // MARK: UIScrollViewDelegate Methods
 extension SwiftPhotoGalleryCell: UIScrollViewDelegate {
 
-    public func viewForZooming(in scrollView: UIScrollView) -> UIView? {
+    open func viewForZooming(in scrollView: UIScrollView) -> UIView? {
         return imageView
     }
 
-    public func scrollViewDidZoom(_ scrollView: UIScrollView) {
+    open func scrollViewDidZoom(_ scrollView: UIScrollView) {
 
         let imageViewSize = imageView.frame.size
         let scrollViewSize = scrollView.bounds.size
