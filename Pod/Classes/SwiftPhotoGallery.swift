@@ -9,12 +9,13 @@
 import Foundation
 import UIKit
 
-@objc public protocol SwiftPhotoGalleryDataSource {
+public protocol SwiftPhotoGalleryDataSource: AnyObject {
     func numberOfImagesInGallery(gallery:SwiftPhotoGallery) -> Int
     func imageInGallery(gallery:SwiftPhotoGallery, forIndex:Int) -> UIImage?
+    func urlInGallery(gallery:SwiftPhotoGallery, forIndex:Int) -> URL
 }
 
-@objc public protocol SwiftPhotoGalleryDelegate {
+public protocol SwiftPhotoGalleryDelegate: AnyObject {
     func galleryDidTapToClose(gallery:SwiftPhotoGallery)
 }
 
@@ -63,14 +64,18 @@ public class SwiftPhotoGallery: UIViewController {
         }
     }
 
+    public var useUrlInsteadOfImage: Bool = false
+
     public var currentPage: Int {
         set(page) {
-            if page < numberOfImages {
-                scrollToImage(withIndex: page, animated: false)
-            } else {
-                scrollToImage(withIndex: numberOfImages - 1, animated: false)
+            if self.viewIfLoaded?.window != nil {
+                if page < numberOfImages {
+                    scrollToImage(withIndex: page, animated: false)
+                } else {
+                    scrollToImage(withIndex: numberOfImages - 1, animated: false)
+                }
+                updatePageControl()
             }
-            updatePageControl()
         }
         get {
             if isRevolvingCarouselEnabled {
@@ -97,7 +102,9 @@ public class SwiftPhotoGallery: UIViewController {
     }
     #endif
 
+    public var startingPage: Int = 0
     public var isSwipeToDismissEnabled: Bool = true
+    public var isTapToDismissEnabled: Bool = true
     public var isRevolvingCarouselEnabled: Bool = true
 
     private var pageBeforeRotation: Int = 0
@@ -144,10 +151,13 @@ public class SwiftPhotoGallery: UIViewController {
         super.viewDidLayoutSubviews()
 
         if needsLayout {
-            let desiredIndexPath = IndexPath(item: pageBeforeRotation, section: 0)
-
+            var desiredIndexPath = IndexPath(item: pageBeforeRotation, section: 0)
+            if startingPage >= 0 {
+                scrollToImage(withIndex: startingPage, animated: false)
+                desiredIndexPath = IndexPath(item: startingPage, section: 0)
+            }
             if pageBeforeRotation >= 0 {
-                scrollToImage(withIndex: pageBeforeRotation, animated: false)
+            //    scrollToImage(withIndex: pageBeforeRotation, animated: false)
             }
 
             imageCollectionView.reloadItems(at: [desiredIndexPath])
@@ -175,7 +185,12 @@ public class SwiftPhotoGallery: UIViewController {
         setupGestureRecognizers()
     }
 
+    public override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+    }
+
     public override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
         if currentPage < 0 {
             currentPage = 0
         }
@@ -291,7 +306,9 @@ public class SwiftPhotoGallery: UIViewController {
     #endif
 
     @objc public func singleTapAction(recognizer: UITapGestureRecognizer) {
-        delegate?.galleryDidTapToClose(gallery: self)
+        if isTapToDismissEnabled {
+            delegate?.galleryDidTapToClose(gallery: self)
+        }
     }
 
 
@@ -401,6 +418,10 @@ public class SwiftPhotoGallery: UIViewController {
         return imageForPage!
     }
 
+    fileprivate func getUrl(currentPage: Int) -> URL {
+        let urlForPage = dataSource?.urlInGallery(gallery: self, forIndex: currentPage)
+        return urlForPage!
+    }
 }
 
 
@@ -417,7 +438,11 @@ extension SwiftPhotoGallery: UICollectionViewDataSource {
 
     public func collectionView(_ imageCollectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = imageCollectionView.dequeueReusableCell(withReuseIdentifier: "SwiftPhotoGalleryCell", for: indexPath) as! SwiftPhotoGalleryCell
-        cell.image = getImage(currentPage: indexPath.row)
+        if useUrlInsteadOfImage {
+            cell.url = getUrl(currentPage: indexPath.row)
+        } else {
+            cell.image = getImage(currentPage: indexPath.row)
+        }
         return cell
     }
 
@@ -430,9 +455,17 @@ extension SwiftPhotoGallery: UICollectionViewDataSource {
         case UICollectionView.elementKindSectionHeader:
             cell = collectionView.dequeueReusableSupplementaryView(ofKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: "SwiftPhotoGalleryCell", for: indexPath) as! SwiftPhotoGalleryCell
             if isViewFirstAppearing {
-                cell.image = getImage(currentPage: 0)
+                if useUrlInsteadOfImage {
+                    cell.url = getUrl(currentPage: 0)
+                } else {
+                    cell.image = getImage(currentPage: 0)
+                }
             } else {
-                cell.image = getImage(currentPage: numberOfImages - 1)
+                if useUrlInsteadOfImage {
+                    cell.url = getUrl(currentPage: numberOfImages - 1)
+                } else {
+                    cell.image = getImage(currentPage: numberOfImages - 1)
+                }
             }
         default:
             assertionFailure("Unexpected element kind")

@@ -6,6 +6,9 @@
 //
 //
 
+import Kingfisher
+import UIKit
+
 open class SwiftPhotoGalleryCell: UICollectionViewCell {
 
     var image:UIImage? {
@@ -14,14 +17,23 @@ open class SwiftPhotoGalleryCell: UICollectionViewCell {
         }
     }
 
+    var url: URL? {
+        didSet {
+            configureForNewImage(animated: false)
+        }
+    }
+
     open var scrollView: UIScrollView
     public let imageView: UIImageView
+    fileprivate let loading: UIImage? = UIImage(named: "propertyLoadingImage")
 
     override init(frame: CGRect) {
 
         imageView = UIImageView()
+        imageView.backgroundColor = .clear
         imageView.translatesAutoresizingMaskIntoConstraints = false
         scrollView = UIScrollView(frame: frame)
+        scrollView.backgroundColor = .clear
         scrollView.translatesAutoresizingMaskIntoConstraints = false
 
         super.init(frame: frame)
@@ -99,7 +111,7 @@ open class SwiftPhotoGalleryCell: UICollectionViewCell {
         scrollView.addConstraints(imageViewConstraints)
 
         scrollView.delegate = self
-
+        self.backgroundColor = .clear
         setupGestureRecognizer()
     }
 
@@ -117,16 +129,22 @@ open class SwiftPhotoGalleryCell: UICollectionViewCell {
     }
 
     func configureForNewImage(animated: Bool = true) {
-        imageView.image = image
-        imageView.sizeToFit()
-
-        setZoomScale()
-        scrollViewDidZoom(scrollView)
-
-        if animated {
-            imageView.alpha = 0.0
-            UIView.animate(withDuration: 0.5) {
-                self.imageView.alpha = 1.0
+        if let url = url {
+            imageView.kf.setImage(with: url, placeholder: UIImage(), completionHandler: { result in
+                self.imageView.sizeToFit()
+                self.setZoomScale()
+                self.scrollViewDidZoom(self.scrollView)
+            })
+        } else {
+            imageView.image = image
+            imageView.sizeToFit()
+            setZoomScale()
+            scrollViewDidZoom(scrollView)
+            if animated {
+                imageView.alpha = 0.0
+                UIView.animate(withDuration: 0.5) {
+                    self.imageView.alpha = 1.0
+                }
             }
         }
     }
