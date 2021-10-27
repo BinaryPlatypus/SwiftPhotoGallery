@@ -14,7 +14,7 @@ let package = Package(
             targets: ["SwiftPhotoGallery"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/onevcat/Kingfisher", .upToNextMajor(from: "5.15.5"))
+        .package(url: "https://github.com/onevcat/Kingfisher", .upToNextMajor(from: "7.1.1"))
     ],
     targets: [
         .target(
